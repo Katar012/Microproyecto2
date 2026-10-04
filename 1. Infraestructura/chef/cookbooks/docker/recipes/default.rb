@@ -1,9 +1,16 @@
-# Instala paquetes de prerrequisito
-package %w(apt-transport-https ca-certificates curl gnupg lsb-release) do
-  action :install
+# 1. Asegurar la actualización previa de los índices de paquetes apt
+apt_update 'update_apt' do
+  action :update
 end
 
-# Crea directorio de keyring
+# 2. Instalar paquetes de prerrequisito necesarios
+%w(apt-transport-https ca-certificates curl gnupg lsb-release).each do |pkg|
+  package pkg do
+    action :install
+  end
+end
+
+# 3. Crear el directorio de keyrings si no existe
 directory '/etc/apt/keyrings' do
   owner 'root'
   group 'root'
@@ -11,36 +18,39 @@ directory '/etc/apt/keyrings' do
   action :create
 end
 
-# Agrega la llave GPG de Docker
+# 4. Descargar y agregar la llave GPG oficial de Docker
 execute 'add_docker_gpg_key' do
-  command 'curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg --yes'
+  command 'curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg'
   creates '/etc/apt/keyrings/docker.gpg'
 end
 
-# Agrega el repositorio oficial de Docker
+# 5. Configurar el repositorio oficial de Docker usando la arquitectura nativa del sistema
 file '/etc/apt/sources.list.d/docker.list' do
-  content 'deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu jammy stable'
+  content "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu #{node['lsb']['codename']} stable\n"
   owner 'root'
   group 'root'
   mode '0644'
-  notifies :run, 'execute[apt-get update]', :immediately
+  notifies :run, 'execute[apt-get update docker repo]', :immediately
 end
 
-execute 'apt-get update' do
+execute 'apt-get update docker repo' do
+  command 'apt-get update'
   action :nothing
 end
 
-# Instala Docker Engine
-package %w(docker-ce docker-ce-cli containerd.io) do
-  action :install
+# 6. Instalar Docker Engine y componentes
+%w(docker-ce docker-ce-cli containerd.io).each do |pkg|
+  package pkg do
+    action :install
+  end
 end
 
-# Habilita e inicia el servicio Docker
+# 7. Habilitar e iniciar el servicio de Docker
 service 'docker' do
   action [:enable, :start]
 end
 
-# Agrega usuario vagrant al grupo docker
+# 8. Agregar al usuario vagrant al grupo docker
 group 'docker' do
   action :modify
   members 'vagrant'
