@@ -16,6 +16,22 @@ Vagrant.configure("2") do |config|
 
     # Monta la raiz del repo como sync folder por si acaso
     control.vm.synced_folder ".", "/vagrant"
+    # Preinstalacion de herramientas esenciales
+    control.vm.provision "shell", inline: <<-SHELL
+      sudo apt-get update -y
+      sudo apt-get install -y wget curl unzip git software-properties-common ansible
+      
+      # Instala Terraform
+      wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
+      echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+      sudo apt-get update -y && sudo apt-get install -y terraform
+
+      # Genera llave ssh si no estan presentes
+      # if [ ! -f /home/vagrant/.ssh/id_rsa ]; then
+      #  ssh-keygen -t rsa -N "" -f /home/vagrant/.ssh/id_rsa
+      #  chown vagrant:vagrant /home/vagrant/.ssh/id_rsa*
+      # fi
+    SHELL
   end
 
   # 2. vm-haproxy
@@ -28,6 +44,11 @@ Vagrant.configure("2") do |config|
       v.cpus = 2
       v.memory = 3072
     end
+    # Permite Autenticacion ssh
+    # haproxy.vm.provision "shell", inline: <<-SHELL
+    #  sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+    #  systemctl restart ssh
+    # SHELL
   end
 
   # 3. vm-microservices
@@ -40,6 +61,11 @@ Vagrant.configure("2") do |config|
       v.cpus = 2
       v.memory = 3072
     end
+    # Permite Autenticacion ssh
+    # haproxy.vm.provision "shell", inline: <<-SHELL
+    #  sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+    #  systemctl restart ssh
+    # SHELL
   end
 
 end
