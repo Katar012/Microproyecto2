@@ -31,15 +31,15 @@ resource "null_resource" "provision_haproxy" {
     password = var.ssh_password
   }
 
-  # Copia la carpeta de Chef completa al nodo destino
   provisioner "file" {
     source      = "${path.module}/../chef"
     destination = "/tmp/chef"
   }
 
-  # Instala Cinc/Chef Client en el nodo y ejecuta el rol de HAProxy
   provisioner "remote-exec" {
     inline = [
+      "while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 2; done",
+      "sudo apt-get update -y",
       "curl -L https://omnitruck.cinc.sh/install.sh | sudo bash -s -- -v 18",
       "cd /tmp/chef && sudo cinc-client -z -c /tmp/chef/solo.rb -j /tmp/chef/nodes/vm-haproxy.json"
     ]

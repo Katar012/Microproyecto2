@@ -1,4 +1,7 @@
-# Codigo de tamaño PROMEDIO
+apt_update 'update_apt' do
+  action :update
+end
+
 package 'haproxy' do
   action :install
 end
