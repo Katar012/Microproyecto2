@@ -1,0 +1,23 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+
+config.vm.define :vm-haproxy do |vm-haproxy|
+    servidorUbuntu.vm.box = "bento/ubuntu-22.04"
+    servidorUbuntu.vm.network :private_network, ip: "192.168.100.2"
+    servidorUbuntu.vm.hostname = "vm-haproxy"
+    servidorUbuntu.vm.provider "virtualbox" do |v|
+        v.cpus = 2
+        v.memory = 3072
+    end
+config.vm.define :vm-microservices do |vm-microservices|
+    servidorUbuntu.vm.box = "bento/ubuntu-22.04"
+    servidorUbuntu.vm.network :private_network, ip: "192.168.100.3"
+    servidorUbuntu.vm.hostname = "vm-microservices"
+    servidorUbuntu.vm.provider "virtualbox" do |v|
+        v.cpus = 2
+        v.memory = 3072
+    end
+  end
+end
