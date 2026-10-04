@@ -28,12 +28,13 @@ Vagrant.configure("2") do |config|
 
       # Install Chef Workstation / Cinc Workstation
       curl -L https://omnitruck.chef.io/install.sh | sudo bash -s -- -P chef-workstation
-    SHELL
+    
       # Genera llave ssh si no estan presentes
-      # if [ ! -f /home/vagrant/.ssh/id_rsa ]; then
-      #  ssh-keygen -t rsa -N "" -f /home/vagrant/.ssh/id_rsa
-      #  chown vagrant:vagrant /home/vagrant/.ssh/id_rsa*
-      # fi
+      if [ ! -f /home/vagrant/.ssh/id_rsa ]; then
+      ssh-keygen -t rsa -N "" -f /home/vagrant/.ssh/id_rsa
+      chown vagrant:vagrant /home/vagrant/.ssh/id_rsa*
+      fi
+    SHELL
   end
 
   # 2. vm-haproxy
@@ -47,10 +48,10 @@ Vagrant.configure("2") do |config|
       v.memory = 3072
     end
     # Permite Autenticacion ssh
-    # haproxy.vm.provision "shell", inline: <<-SHELL
-    #  sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
-    #  systemctl restart ssh
-    # SHELL
+     haproxy.vm.provision "shell", inline: <<-SHELL
+     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+     systemctl restart ssh
+    SHELL
   end
 
   # 3. vm-microservices
@@ -64,10 +65,10 @@ Vagrant.configure("2") do |config|
       v.memory = 3072
     end
     # Permite Autenticacion ssh
-    # haproxy.vm.provision "shell", inline: <<-SHELL
-    #  sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
-    #  systemctl restart ssh
-    # SHELL
+    microservices.vm.provision "shell", inline: <<-SHELL
+    sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+    systemctl restart ssh
+   SHELL
   end
 
 end

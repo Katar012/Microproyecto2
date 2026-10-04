@@ -1,3 +1,13 @@
 El Vagrantfile de una carpeta hacia atras llama a Terraform, Terraform llama a chef con las configuraciones
 
 Terraform crea las dos VM, Chef las configura
+
+
+VERIFICACION DEL PROBLEMA 1: INFRAESTRUCTURA:
+
+1. vagrant ssh control-node
+2. cd /vagrant/1.\ Infraestructura/terraform (DIRECTORIO COMPARTIDO CON LA RAIZ DEL REPOSITORIO)
+3. terraform init
+4. terraform apply -auto-approve
+
+UNA VEZ VERIFICADO EL DESPLIEGUE Y TODO LO ANTERIOR EJECUTE SIN PROBLEMAS:
