@@ -3,45 +3,7 @@
 
 Vagrant.configure("2") do |config|
 
-<<<<<<< HEAD
-  # 1. control-node
-  config.vm.define "control-node" do |control|
-    control.vm.box = "bento/ubuntu-22.04"
-    control.vm.network "private_network", ip: "192.168.100.10"
-    control.vm.hostname = "control-node"
-    
-    control.vm.provider "virtualbox" do |v|
-      v.cpus = 2
-      v.memory = 2048
-    end
-
-    # Monta la raiz del repo como sync folder por si acaso
-    control.vm.synced_folder ".", "/vagrant"
-    # Preinstalacion de herramientas esenciales
-    control.vm.provision "shell", inline: <<-SHELL
-      sudo apt-get update -y
-      sudo apt-get install -y wget curl unzip git software-properties-common
-
-      # Instala Terraform
-      wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
-      echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-      sudo apt-get update -y && sudo apt-get install -y terraform
-
-      # Install Chef Workstation / Cinc Workstation
-      curl -L https://omnitruck.chef.io/install.sh | sudo bash -s -- -P chef-workstation
-    
-      # Genera llave ssh si no estan presentes
-      if [ ! -f /home/vagrant/.ssh/id_rsa ]; then
-      ssh-keygen -t rsa -N "" -f /home/vagrant/.ssh/id_rsa
-      chown vagrant:vagrant /home/vagrant/.ssh/id_rsa*
-      fi
-    SHELL
-  end
-
-  # 2. vm-haproxy
-=======
   # 1. vm-haproxy
->>>>>>> problema1
   config.vm.define "vm-haproxy" do |haproxy|
     haproxy.vm.box = "bento/ubuntu-22.04"
     haproxy.vm.network "private_network", ip: "192.168.100.2"

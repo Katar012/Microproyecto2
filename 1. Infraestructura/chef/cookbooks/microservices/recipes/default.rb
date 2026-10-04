@@ -16,7 +16,7 @@ execute 'deploy_products_1' do
 end
 
 execute 'deploy_products_2' do
-  command 'docker run -d --name products-service-2 --restart always -p 3022:3000 hashicorp/http-echo -listen=:3000 -text="products-service-2"'
+  command 'docker run -d --name products-service-2 --restart always -p 3012:3000 hashicorp/http-echo -listen=:3000 -text="products-service-2"'
   not_if 'docker ps -a --format "{{.Names}}" | grep -q "^products-service-2$"'
 end
 
@@ -27,6 +27,6 @@ execute 'deploy_orders_1' do
 end
 
 execute 'deploy_orders_2' do
-  command 'docker run -d --name orders-service-2 --restart always -p 3033:3000 hashicorp/http-echo -listen=:3000 -text="orders-service-2"'
+  command 'docker run -d --name orders-service-2 --restart always -p 3013:3000 hashicorp/http-echo -listen=:3000 -text="orders-service-2"'
   not_if 'docker ps -a --format "{{.Names}}" | grep -q "^orders-service-2$"'
 end
