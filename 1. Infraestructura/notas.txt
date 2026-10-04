@@ -1,4 +1,3 @@
-Problema 1:
-Vagrantfile aislado de Ubuntu 22.04
-Adentro llama Scripts Terraform y Chef
+El Vagrantfile de una carpeta hacia atras llama a Terraform, Terraform llama a chef con las configuraciones
+
 Terraform crea las dos VM, Chef las configura

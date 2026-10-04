@@ -1,4 +1,10 @@
 /cookbooks contiene 3 recetas separadas en lugar de una gran receta inmantenible
-/roles describe que debe ser cada VM
+/roles describe que debe ser cada VM con su respectivo rol
+/nodes toma cada rol y se lo asigna a una VM
+solo.rb, archivo recomendado por la IA, es un archivo de config para chef-solo, no queda claro
+
+Cosas que ya se saben:
 vm-microservices es docker y microservicios
 vm-haproxy sera el balanceador haproxy
+
+
