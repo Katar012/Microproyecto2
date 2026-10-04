@@ -4,10 +4,10 @@ global
 
 defaults
     log global
+    stats enable
+    stats refresh 10s
+    stats uri /stats
     mode http
-    timeout connect 5s
-    timeout client  50s
-    timeout server  50s
 
 # 1. Frontend de entrada en puerto 80
 frontend http_front
@@ -26,21 +26,18 @@ frontend http_front
 # 2. Backend de Usuarios
 backend users_back
     balance roundrobin
-    option httpchk GET /
     server users1 192.168.100.3:3001 check
     server users2 192.168.100.3:3011 check
 
 # 3. Backend de Productos
 backend products_back
     balance roundrobin
-    option httpchk GET /
     server products1 192.168.100.3:3002 check
     server products2 192.168.100.3:3012 check
 
 # 4. Backend de Ordenes
 backend orders_back
     balance roundrobin
-    option httpchk GET /
     server orders1 192.168.100.3:3003 check
     server orders2 192.168.100.3:3013 check
 
@@ -49,6 +46,6 @@ listen stats
     bind *:8080
     mode http
     stats enable
-    stats uri /
-    stats refresh 5s
+    stats uri /stats
+    stats refresh 10s
     stats auth admin:admin123
