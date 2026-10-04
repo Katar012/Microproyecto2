@@ -4,6 +4,6 @@ haproxy.cfg expone un frontend de entrada en el puerto 80 por alguna razon que t
 Tambien habilita el balanceo roundrobin entre las 2 instancias de cada backend
 Y por ultimo habilita un dashboard en el puerto 8080 con autenticacion admin:admin123
 
-url: http://192.168.100.2:8080
+url: http://192.168.100.2:8080, quiza.
 
 
