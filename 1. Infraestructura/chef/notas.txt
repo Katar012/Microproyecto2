@@ -1,0 +1,4 @@
+/cookbooks contiene 3 recetas separadas en lugar de una gran receta inmantenible
+/roles describe que debe ser cada VM
+vm-microservices es docker y microservicios
+vm-haproxy sera el balanceador haproxy

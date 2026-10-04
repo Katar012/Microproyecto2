@@ -1,0 +1,3 @@
+/docker instala y configura docker
+/microservices contiene los servicios users, products y orders
+/haproxy instala y configura haproxy
