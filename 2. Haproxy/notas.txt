@@ -1,0 +1,9 @@
+Esta carpeta solo lleva haproxy.cfg
+
+haproxy.cfg expone un frontend de entrada en el puerto 80 por alguna razon que todavia desconozco (No tenemos frontend)
+Tambien habilita el balanceo roundrobin entre las 2 instancias de cada backend
+Y por ultimo habilita un dashboard en el puerto 8080 con autenticacion admin:admin123
+
+url: http://192.168.100.2:8080
+
+
