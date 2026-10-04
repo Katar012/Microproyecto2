@@ -1,5 +1,4 @@
 Problema 1:
-
-control-node es un Vagrantfile aislado de Ubuntu 22.04
+Vagrantfile aislado de Ubuntu 22.04
 Adentro llama Scripts Terraform y Chef
 Terraform crea las dos VM, Chef las configura
