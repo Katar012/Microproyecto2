@@ -1,1 +1,6 @@
-
+{
+  "name": "vm-microservices",
+  "run_list": [
+    "role[microservices]"
+  ]
+}

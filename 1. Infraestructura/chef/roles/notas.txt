@@ -1,0 +1,1 @@
+Aqui se describe que hace cada rol, estos roles son asignados a una VM desde la carpeta /chef/nodes/, estos roles llaman a X o Y cookbook de la carpeta /chef/cookbooks/ que se les indique

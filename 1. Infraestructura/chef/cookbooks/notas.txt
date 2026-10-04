@@ -1,3 +1,4 @@
+Estos son los cookbooks, cada uno hace algo especifico, hay un premio dentro de los metadata.rb para el que lo lea
 /docker instala y configura docker
 /microservices contiene los servicios users, products y orders
 /haproxy instala y configura haproxy

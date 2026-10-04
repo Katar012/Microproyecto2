@@ -1,0 +1,1 @@
+Aqui se le asigna un rol a cada vm, estos roles son descritos en la carpeta /chef/roles/, cada rol ejecuta un cookbook de la carpeta /chef/cookbooks/

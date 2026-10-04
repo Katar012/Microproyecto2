@@ -1,1 +1,6 @@
-
+name 'microservices'
+maintainer 'Katar012 - jvilamarin31 - AlejandroRodriguezDev'
+license 'RE MARICON EL QUE LO LEA'
+description 'Despliega los contenedores de los microservicios'
+version '0.1.0'
+chef_version '>= 16.0'

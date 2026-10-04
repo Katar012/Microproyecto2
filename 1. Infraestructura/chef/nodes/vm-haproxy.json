@@ -1,1 +1,6 @@
-
+{
+  "name": "vm-haproxy",
+  "run_list": [
+    "role[haproxy]"
+  ]
+}

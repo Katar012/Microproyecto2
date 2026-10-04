@@ -34,7 +34,6 @@ Vagrant.configure("2") do |config|
       #  ssh-keygen -t rsa -N "" -f /home/vagrant/.ssh/id_rsa
       #  chown vagrant:vagrant /home/vagrant/.ssh/id_rsa*
       # fi
-    SHELL
   end
 
   # 2. vm-haproxy
