@@ -16,6 +16,7 @@ resource "null_resource" "provision_microservices" {
   # Instala Cinc/Chef Client en el nodo y ejecuta el rol de microservicios
   provisioner "remote-exec" {
     inline = [
+      "while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 2; done",
       "curl -L https://omnitruck.cinc.sh/install.sh | sudo bash -s -- -v 18",
       "cd /tmp/chef && sudo cinc-client -z -c /tmp/chef/solo.rb -j /tmp/chef/nodes/vm-microservices.json"
     ]
@@ -24,6 +25,9 @@ resource "null_resource" "provision_microservices" {
 
 # Aprovisiona vm-haproxy transfiriendo los cookbooks de Chef y ejecutándolos
 resource "null_resource" "provision_haproxy" {
+  # Garantiza que los microservicios se instalen primero antes de aprovisionar el balanceador
+  depends_on = [null_resource.provision_microservices]
+
   connection {
     type     = "ssh"
     host     = var.haproxy_ip
@@ -39,6 +43,7 @@ resource "null_resource" "provision_haproxy" {
   provisioner "remote-exec" {
     inline = [
       "while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 2; done",
+      "sudo systemctl stop unattended-upgrades || true",
       "sudo apt-get update -y",
       "curl -L https://omnitruck.cinc.sh/install.sh | sudo bash -s -- -v 18",
       "cd /tmp/chef && sudo cinc-client -z -c /tmp/chef/solo.rb -j /tmp/chef/nodes/vm-haproxy.json"
