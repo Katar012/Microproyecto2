@@ -3,3 +3,13 @@
 
 # Log files (if you are creating logs in debug mode, uncomment this)
 # *.log
+
+# Terraform working directory and downloaded providers
+**/.terraform/
+
+# Terraform state files
+*.tfstate
+*.tfstate.*
+
+# Optional: ignore Terraform lock files too
+# *.terraform.lock.hcl
