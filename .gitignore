@@ -12,4 +12,4 @@
 *.tfstate.*
 
 # Optional: ignore Terraform lock files too
-# *.terraform.lock.hcl
+*.terraform.lock.hcl
