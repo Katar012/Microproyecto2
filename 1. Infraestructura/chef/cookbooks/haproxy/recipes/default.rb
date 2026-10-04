@@ -7,8 +7,8 @@ package 'haproxy' do
 end
 
 # Copia el haproxy.cfg al nodo destino
-template '/etc/haproxy/haproxy.cfg' do
-  source 'haproxy.cfg.erb'
+remote_file '/etc/haproxy/haproxy.cfg' do
+  source 'file:///tmp/chef/2. Haproxy/haproxy.cfg'
   owner 'root'
   group 'root'
   mode '0644'
