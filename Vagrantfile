@@ -6,7 +6,7 @@ Vagrant.configure("2") do |config|
   # 1. control-node
   config.vm.define "control-node" do |control|
     control.vm.box = "bento/ubuntu-22.04"
-    control.vm.network "private_network", ip: "192.168.100.1"
+    control.vm.network "private_network", ip: "192.168.100.10"
     control.vm.hostname = "control-node"
     
     control.vm.provider "virtualbox" do |v|
