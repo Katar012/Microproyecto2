@@ -10,6 +10,7 @@
   * [Probar Infraestructura](#probar-infraestructura)
   * [Probar HAProxy](#probar-haproxy)
   * [Probar Kubernetes](#probar-kubernetes)
+* [Notas para desarrollo](#notas-para-desarrollo)
 ---
 
 # <a id="que-hay-hecho"></a>¿Que hay hecho?
@@ -83,7 +84,7 @@ Primero clona el repo y posicionate en la raiz.
 
 ### <a id="probar-haproxy"></a>4.2. Probar HAProxy
 
-1. Ingresar al <a href="http://192.168.100.2:8080/stats">Dashboard</a>
+1. Ingresar al <a href="http://192.168.100.2:8080/stats">Dashboard: </a>`admin/admin123`
 2. `for i in {1..6}; do curl -s http://192.168.100.2/api/users; echo ""; done` verificar balanceo entre dos nodos del servicio users
 3. `ssh vagrant@192.168.100.3 "docker ps"` desde control-node 
 4. Tomar cualquier CONTAINER ID y ejecutar `ssh vagrant@192.168.100.3 "docker stop [CONTAINER_ID]"`
@@ -94,3 +95,59 @@ Primero clona el repo y posicionate en la raiz.
 1. No hay nada aun.
 
 ---
+
+# <a id="notas-para-desarrollo"></a>NOTAS PARA DESARROLLO (Pa que se las pegues a la ia)
+
+* En el repositorio hay un monton de notas.txt guias
+* La contraseña de cada maquina virtual es `vagrant`
+* Usuario y contraseña del <a href="http://192.168.100.2:8080/stats">Dashboard: </a>`admin/admin123`
+* EXTREMA precaucion con los creditos de Azure en el desarrollo del punto 3
+* NO EDITAR ESTE README
+
+### <a id="arbol-de-carpetas"></a>ARBOL DE CARPETAS
+
+---
+Microproyecto2
+├── 1-2. Infraestructura
+│   ├── chef
+│   │   ├── cookbooks
+│   │   │   ├── docker
+│   │   │   │   ├── metadata.rb
+│   │   │   │   └── recipes
+│   │   │   │       └── default.rb
+│   │   │   ├── haproxy
+│   │   │   │   ├── metadata.rb
+│   │   │   │   ├── notas.txt
+│   │   │   │   ├── recipes
+│   │   │   │   │   └── default.rb
+│   │   │   │   └── templates
+│   │   │   │       └── default
+│   │   │   │           └── haproxy.cfg.erb
+│   │   │   ├── microservices
+│   │   │   │   ├── metadata.rb
+│   │   │   │   └── recipes
+│   │   │   │       └── default.rb
+│   │   │   └── notas.txt
+│   │   ├── nodes
+│   │   │   ├── notas.txt
+│   │   │   ├── vm-haproxy.json
+│   │   │   └── vm-microservices.json
+│   │   ├── notas.txt
+│   │   ├── roles
+│   │   │   ├── haproxy.rb
+│   │   │   ├── microservices.rb
+│   │   │   └── notas.txt
+│   │   └── solo.rb
+│   └── terraform
+│       ├── main.tf
+│       ├── outputs.tf
+│       ├── providers.tf
+│       ├── terraform.tfstate
+│       ├── terraform.tfstate.backup
+│       └── variables.tf
+├── 3. Kubernetes
+├── README.md
+└── Vagrantfile
+
+---
+
