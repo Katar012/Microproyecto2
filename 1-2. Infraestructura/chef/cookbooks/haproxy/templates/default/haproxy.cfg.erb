@@ -1,51 +1,74 @@
+#---------------------------------------------------------------------
+# /etc/haproxy/haproxy.cfg
+# GENERADO POR CHEF (cookbook haproxy, plantilla haproxy.cfg.erb)
+# No editar a mano en la VM: cualquier cambio se pierde en el siguiente
+# aprovisionamiento. Editar la plantilla/atributos y correr terraform apply.
+#---------------------------------------------------------------------
+
 global
-    log stdout format raw local0
-    stats socket /tmp/haproxy.sock mode 666 level admin
+    log /dev/log local0
+    maxconn 2048
+    # Socket de administracion (API en caliente): socat stdio /run/haproxy/admin.sock
+    stats socket /run/haproxy/admin.sock mode 660 level admin
+    user haproxy
+    group haproxy
 
 defaults
     log global
-    stats enable
-    stats refresh 10s
-    stats uri /stats
     mode http
+    option httplog
+    option dontlognull
+    option forwardfor
+    # Si un servidor no responde, reintenta y manda la peticion a OTRO servidor
+    # del backend (el cliente no ve el error mientras HAProxy detecta la caida)
+    retries 3
+    option redispatch
+    timeout connect 5s
+    timeout client  30s
+    timeout server  30s
+    timeout check   2s
 
-# 1. Frontend de entrada en puerto 80
+# 1. Frontend de entrada en puerto 80 (punto de entrada UNICO de la aplicacion)
 frontend http_front
     bind *:80
 
     # Reglas ACL segun prefijo de ruta
-    acl is_users    path_beg /api/users
-    acl is_products path_beg /api/products
-    acl is_orders   path_beg /api/orders
+<% @services.each_key do |svc| %>
+    acl is_<%= svc %> path_beg /api/<%= svc %>
+<% end %>
 
     # Enrutamiento hacia cada backend
-    use_backend users_back    if is_users
-    use_backend products_back if is_products
-    use_backend orders_back   if is_orders
+<% @services.each_key do |svc| %>
+    use_backend <%= svc %>_back if is_<%= svc %>
+<% end %>
 
-# 2. Backend de Usuarios
-backend users_back
-    balance roundrobin
-    server users1 192.168.100.3:3001 check
-    server users2 192.168.100.3:3011 check
+    # Cualquier otra ruta -> 404 explicando las rutas validas
+    default_backend not_found
 
-# 3. Backend de Productos
-backend products_back
-    balance roundrobin
-    server products1 192.168.100.3:3002 check
-    server products2 192.168.100.3:3012 check
+# 2. Backends: uno por microservicio, balanceo <%= @balance %> + health check HTTP
+<% @services.each do |svc, cfg| %>
+backend <%= svc %>_back
+    balance <%= @balance %>
+    option httpchk GET /health
+    http-check expect status 200
+    # Cabecera para ver en "curl -i" que servidor respondio
+    http-response set-header X-Backend-Server %[srv_name]
+<%   (1..cfg['instances']).each do |i| %>
+    server <%= svc %><%= i %> <%= @backend_ip %>:<%= cfg['port'] + (i - 1) * @port_step %> check <%= @check %>
+<%   end %>
 
-# 4. Backend de Ordenes
-backend orders_back
-    balance roundrobin
-    server orders1 192.168.100.3:3003 check
-    server orders2 192.168.100.3:3013 check
+<% end %>
+backend not_found
+    http-request return status 404 content-type text/plain string "404 - Ruta no definida en HAProxy. Rutas validas: <%= @services.keys.map { |s| "/api/#{s}" }.join(', ') %>"
 
-# 5. Dashboard de Estadisticas en puerto 8080
+# 3. Dashboard de Estadisticas en puerto <%= @stats_port %> (protegido con usuario y contraseña)
 listen stats
-    bind *:8080
+    bind *:<%= @stats_port %>
     mode http
     stats enable
     stats uri /stats
-    stats refresh 10s
-    stats auth admin:admin123
+    stats refresh 5s
+    stats show-legends
+    stats auth <%= @stats_user %>:<%= @stats_password %>
+    # Permite poner servidores en MAINT/DRAIN desde el propio dashboard
+    stats admin if TRUE

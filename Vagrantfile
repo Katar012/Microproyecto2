@@ -11,7 +11,7 @@ Vagrant.configure("2") do |config|
     
     haproxy.vm.provider "virtualbox" do |v|
       v.cpus = 2
-      v.memory = 3072
+      v.memory = 1024   # HAProxy + cinc-client caben de sobra en 1 GB
     end
 
     # Habilita autenticación por contraseña y prepara llaves SSH autorizadas
@@ -38,7 +38,7 @@ Vagrant.configure("2") do |config|
     
     microservices.vm.provider "virtualbox" do |v|
       v.cpus = 2
-      v.memory = 3072
+      v.memory = 1536   # Docker + 6 contenedores http-echo (~5 MB c/u)
     end
 
     # Habilita autenticación por contraseña y prepara llaves SSH autorizadas
@@ -65,7 +65,7 @@ Vagrant.configure("2") do |config|
     
     control.vm.provider "virtualbox" do |v|
       v.cpus = 2
-      v.memory = 2048
+      v.memory = 1024
     end
 
     control.vm.synced_folder ".", "/vagrant"
@@ -90,6 +90,23 @@ Vagrant.configure("2") do |config|
       # Copia las llaves a las VMs usando la llave del usuario vagrant
       sshpass -p "vagrant" ssh-copy-id -i /home/vagrant/.ssh/id_rsa.pub -o StrictHostKeyChecking=no vagrant@192.168.100.2 || true
       sshpass -p "vagrant" ssh-copy-id -i /home/vagrant/.ssh/id_rsa.pub -o StrictHostKeyChecking=no vagrant@192.168.100.3 || true
+
+      # Nombres de las VMs (ssh vm-haproxy / curl http://vm-haproxy/api/users)
+      grep -q vm-haproxy /etc/hosts || echo "192.168.100.2 vm-haproxy" >> /etc/hosts
+      grep -q vm-microservices /etc/hosts || echo "192.168.100.3 vm-microservices" >> /etc/hosts
+
+      # Cliente SSH del usuario vagrant: entra con la llave y sin preguntar
+      # "Are you sure you want to continue connecting (yes/no)?"
+      cat > /home/vagrant/.ssh/config <<'EOF'
+Host vm-haproxy vm-microservices 192.168.100.*
+    User vagrant
+    IdentityFile ~/.ssh/id_rsa
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+    LogLevel ERROR
+EOF
+      chown vagrant:vagrant /home/vagrant/.ssh/config
+      chmod 600 /home/vagrant/.ssh/config
 
       TERRAFORM_DIR="/vagrant/1-2. Infraestructura/terraform"
 

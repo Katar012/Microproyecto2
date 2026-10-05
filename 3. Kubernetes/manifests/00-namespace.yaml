@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: microapp
+  labels:
+    app.kubernetes.io/name: microapp
+    app.kubernetes.io/part-of: ecommerce-platform

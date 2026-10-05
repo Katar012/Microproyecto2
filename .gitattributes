@@ -1,0 +1,10 @@
+# Forzamos finales de linea LF (Linux) en todo el repo.
+# En Windows git convierte a CRLF por defecto (core.autocrlf=true) y como la
+# carpeta del repo se comparte con las VMs Ubuntu (/vagrant), los scripts .sh,
+# las plantillas .erb (-> haproxy.cfg) y los YAML llegarian con "\r" al final
+# de cada linea y bash/haproxy fallarian con errores raros.
+* text=auto eol=lf
+
+*.pdf binary
+*.png binary
+*.jpg binary

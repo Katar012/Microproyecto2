@@ -1,0 +1,42 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: microapp-ingress
+  namespace: microapp
+  annotations:
+    # Deshabilita redireccion obligatoria a HTTPS para poder probar con http:// plano
+    ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # Permite balanceo round-robin por defecto entre los endpoints del Service
+    nginx.ingress.kubernetes.io/load-balance: "round_robin"
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      # 1. Ruta /api/users -> Service users-svc:3001
+      - path: /api/users
+        pathType: Prefix
+        backend:
+          service:
+            name: users-svc
+            port:
+              number: 3001
+
+      # 2. Ruta /api/products -> Service products-svc:3002
+      - path: /api/products
+        pathType: Prefix
+        backend:
+          service:
+            name: products-svc
+            port:
+              number: 3002
+
+      # 3. Ruta /api/orders -> Service orders-svc:3003
+      - path: /api/orders
+        pathType: Prefix
+        backend:
+          service:
+            name: orders-svc
+            port:
+              number: 3003

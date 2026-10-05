@@ -25,8 +25,10 @@ execute 'add_docker_gpg_key' do
 end
 
 # 5. Configurar el repositorio oficial de Docker usando la arquitectura nativa del sistema
+docker_arch = node['kernel']['machine'] == 'aarch64' ? 'arm64' : 'amd64'
+
 file '/etc/apt/sources.list.d/docker.list' do
-  content "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu #{node['lsb']['codename']} stable\n"
+  content "deb [arch=#{docker_arch} signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu #{node['lsb']['codename']} stable\n"
   owner 'root'
   group 'root'
   mode '0644'
