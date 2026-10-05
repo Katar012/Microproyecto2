@@ -6,12 +6,15 @@
 * [2. HAProxy](#2-haproxy)
   * [¿Que hace haproxy.cfg?](#que-hace-haproxycfg)
 * [3. Kubernetes](#3-kubernetes)
-
+* [4. Probar](#4-probar)
+  * [Probar Infraestructura](#probar-infraestructura)
+  * [Probar HAProxy](#probar-haproxy)
+  * [Probar Kubernetes](#probar-kubernetes)
 ---
 
 # <a id="que-hay-hecho"></a>¿Que hay hecho?
 
-1. Infraestructura :white_check_mark:
+1. Infraestructura :white_check_mark: (FALTA CONFIGURAR TERRAFORM DESTROY y TERRAFORM APPLY)
 2. HAProxy :white_check_mark:
 3. Kubernetes :x:
 
@@ -62,3 +65,28 @@ Le dice a la VM que cree un `haproxy.cfg` con el contenido de `/cookbooks/haprox
 # <a id="3-kubernetes"></a>3. Kubernetes
 
 No hay nada aun.
+
+---
+
+# <a id="4-probar"></a>4. Probar
+
+Primero clona el repo y posicionate en la raiz.
+
+### <a id="probar-infraestructura"></a>Probar Infraestructura
+
+1. `vagrant up` levantamos maquinas
+2. `vagrant ssh control-node` entramos a control-node
+3. `cd /vagrant/1-2.\ Infraestructura/terraform` para ir a la carpeta compartida, raiz del repo
+4. `ssh vagrant@192.168.100.3 "docker ps"` verificamos que vm-microservices tenga contenedores
+5. `ssh vagrant@192.168.100.2 "sudo systemctl status haproxy"` verificamos que vm-haproxy tenga haproxy
+6. falta adecuar para que `terraform destroy` y `terraform apply` demuestren que el aprovisionamiento es reproducible
+
+### <a id="probar-haproxy"></a>Probar HAProxy
+
+1. Ingresar al <a href="http://192.168.100.2:8080/stats">Dashboard</a>
+2. `for i in {1..6}; do curl -s http://192.168.100.2/api/users; echo ""; done` verificar balanceo entre dos nodos del servicio users
+3. `ssh vagrant@192.168.100.3 "docker ps"` desde control-node 
+4. Tomar cualquier CONTAINER ID y ejecutar `ssh vagrant@192.168.100.3 "docker stop [CONTAINER_ID]"`
+5. Verificar nuevamente en el dashboard, y volver a correr el punto 2 hacia el servicio del cual se tumbo un contenedor
+
+---

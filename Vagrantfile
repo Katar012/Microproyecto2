@@ -91,7 +91,7 @@ Vagrant.configure("2") do |config|
       sshpass -p "vagrant" ssh-copy-id -i /home/vagrant/.ssh/id_rsa.pub -o StrictHostKeyChecking=no vagrant@192.168.100.2 || true
       sshpass -p "vagrant" ssh-copy-id -i /home/vagrant/.ssh/id_rsa.pub -o StrictHostKeyChecking=no vagrant@192.168.100.3 || true
 
-      TERRAFORM_DIR="/vagrant/1. Infraestructura/terraform"
+      TERRAFORM_DIR="/vagrant/1-2. Infraestructura/terraform"
 
       if [ -d "$TERRAFORM_DIR" ]; then
         echo "=== INICIANDO APROVISIONAMIENTO DE TERRAFORM ==="
