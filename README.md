@@ -10,8 +10,8 @@
   * [Probar Infraestructura](#probar-infraestructura)
   * [Probar HAProxy](#probar-haproxy)
   * [Probar Kubernetes](#probar-kubernetes)
-* [Notas para desarrollo](#notas-para-desarrollo)
-
+* [NOTAS PARA DESARROLLO](#notas-para-desarrollo)
+  * [ARBOL DE CARPETAS](#arbol-de-carpetas)
 ---
 
 # <a id="que-hay-hecho"></a>¿Que hay hecho?
