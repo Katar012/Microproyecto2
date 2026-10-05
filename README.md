@@ -1,239 +1,225 @@
 # 📋 Índice
 
-* [¿Que hay hecho?](#que-hay-hecho)
+* [¿Qué hay implementado?](#que-hay-implementado)
 * [1. Infraestructura](#1-infraestructura)
   * [1.1. Chef](#11-chef)
-  * [1.2. Cambios y arreglos que le metí](#12-cambios-y-arreglos-que-le-meti)
+  * [1.2. Optimizaciones de Infraestructura y Orquestación](#12-optimizaciones-de-infraestructura)
 * [2. HAProxy](#2-haproxy)
-  * [¿Que hace haproxy.cfg?](#que-hace-haproxycfg)
-  * [Mejoras que le cuadré al balanceo](#mejoras-que-le-cuadre-al-balanceo)
-* [3. Kubernetes (Punto 3 Terminado)](#3-kubernetes)
+  * [2.1. Arquitectura de haproxy.cfg](#21-arquitectura-de-haproxycfg)
+  * [2.2. Resiliencia, Monitoreo y Alta Disponibilidad](#22-resiliencia-y-alta-disponibilidad)
+* [3. Kubernetes (Orquestación en la Nube)](#3-kubernetes)
   * [3.1. Arquitectura de los Manifiestos](#31-arquitectura-de-los-manifiestos)
-  * [3.2. Scripts listos para Azure y Local](#32-scripts-listos-para-azure-y-local)
-  * [3.3. Opcional: Terraform + AKS](#33-opcional-terraform--aks)
-* [4. Probar](#4-probar)
-  * [Probar Infraestructura](#probar-infraestructura)
-  * [Probar HAProxy](#probar-haproxy)
-  * [Probar Kubernetes](#probar-kubernetes)
-* [NOTAS PARA DESARROLLO Y SUSTENTACIÓN](#notas-para-desarrollo)
-  * [ARBOL DE CARPETAS ACTUALIZADO](#arbol-de-carpetas)
+  * [3.2. Scripts de Despliegue y Automatización](#32-scripts-de-despliegue)
+  * [3.3. Módulo Opcional: Terraform + AKS](#33-modulo-opcional-terraform-aks)
+* [4. Guía de Ejecución y Pruebas](#4-guia-de-ejecucion-y-pruebas)
+  * [4.1. Verificación de Infraestructura (Problema 1)](#41-verificacion-infraestructura)
+  * [4.2. Verificación de Balanceo y Failover (Problema 2)](#42-verificacion-haproxy)
+  * [4.3. Verificación de Kubernetes en Azure AKS (Problema 3)](#43-verificacion-kubernetes)
+* [5. Documentación Adicional](#5-documentacion-adicional)
+  * [Árbol de Carpetas del Proyecto](#arbol-de-carpetas)
 
 ---
 
-# <a id="que-hay-hecho"></a>¿Que hay hecho?
+# <a id="que-hay-implementado"></a>¿Qué hay implementado?
 
-1. Infraestructura :white_check_mark: (LISTO: arreglado el ciclo reproducible de `terraform destroy` y `terraform apply`, autenticación con llaves SSH y memoria optimizada para que no estalle la máquina).
-2. HAProxy :white_check_mark: (LISTO: sincronizado con los atributos de Chef, health checks dinámicos, redispatch ante caídas sin errores para el cliente, dashboard seguro y script de prueba automática).
-3. Kubernetes :white_check_mark: (LISTO: Namespace `microapp`, Deployments con 2 réplicas cada uno, Services ClusterIP, Ingress NGINX por rutas `/api/*`, escalado horizontal a 4 réplicas con cero caída, scripts de Azure AKS + Local con Kind/Minikube + Opcional de Terraform).
+1. **Problema 1: Aprovisionamiento de Infraestructura** :white_check_mark:  
+   Aprovisionamiento automatizado de máquinas virtuales con Vagrant, Terraform y Chef (Cinc-Client en modo Chef-Zero). Incluye ciclo de vida 100% reproducible con `terraform destroy` y `terraform apply`, autenticación segura por llaves SSH y orquestación declarativa de contenedores con Docker Compose.
+2. **Problema 2: Balanceo de Carga con HAProxy** :white_check_mark:  
+   Punto de entrada único en puerto 80 con enrutamiento basado en prefijos de URL (`/api/users`, `/api/products`, `/api/orders`), balanceo Round-Robin hacia instancias redundantes, health checks continuos con reconexión transparente (`retries 3`, `option redispatch`), trazabilidad mediante cabeceras HTTP y dashboard de métricas en puerto 8080 protegido por credenciales.
+3. **Problema 3: Orquestación con Kubernetes** :white_check_mark:  
+   Despliegue cloud-native en Azure Kubernetes Service (AKS) dentro de un namespace dedicado (`microapp`), Deployments con réplicas redundantes y políticas de reinicio, Services `ClusterIP` para aislamiento perimetral, Ingress Controller NGINX para enrutamiento por rutas, escalado elástico horizontal en caliente y scripts de automatización para Azure y entornos locales.
 
 ---
 
 # <a id="1-infraestructura"></a>1. Infraestructura
 
-Es un `Vagrantfile` que crea 3 VMs Ubuntu 22.04:
-- `control-node` (192.168.100.10): La máquina administradora donde corre Terraform y Chef Workstation.
-- `vm-haproxy` (192.168.100.2): Nodo donde corre el balanceador HAProxy.
-- `vm-microservices` (192.168.100.3): Nodo donde corren Docker y los contenedores de los microservicios.
+La topología del laboratorio local se define en un `Vagrantfile` que levanta 3 máquinas virtuales con Ubuntu 22.04 LTS:
+- `control-node` (`192.168.100.10`): Nodo administrador donde residen Terraform v1.x y Chef Workstation.
+- `vm-haproxy` (`192.168.100.2`): Nodo destino dedicado al servicio de balanceo perimetral HAProxy.
+- `vm-microservices` (`192.168.100.3`): Nodo destino dedicado al motor Docker y a los microservicios.
 
-El `Vagrantfile` aprovisiona la máquina `control-node`, genera llaves SSH, las distribuye a las otras 2 VMs y lanza Terraform.  
-Terraform se conecta mediante SSH por llave a `vm-haproxy` y `vm-microservices`, les transfiere la carpeta `/chef` y ejecuta `cinc-client` (Chef de código abierto) en modo local (chef-zero).
+El flujo de aprovisionamiento opera de la siguiente manera:
+1. `Vagrantfile` aprovisiona `control-node`, genera un par de llaves SSH (`id_rsa`), las copia hacia `vm-haproxy` y `vm-microservices`, y ejecuta `terraform apply`.
+2. Terraform se conecta por SSH a cada nodo target mediante llave pública/privada, transfiere la estructura de `/chef` a `/tmp/chef` y ejecuta `cinc-client` de forma local (Chef-Zero).
 
-> 📌 **NOTA:** El `Vagrantfile` monta una carpeta compartida desde la raíz del repo (`/vagrant`) hacia el `control-node`.
+> 📌 **NOTA:** La raíz del repositorio se monta como carpeta compartida (`/vagrant`) en `control-node`.
 
 ### <a id="11-chef"></a>1.1. Chef
 
-Chef tiene cookbooks modulares dentro de `/chef/cookbooks/`:
+El aprovisionamiento de software se estructura en cookbooks modulares dentro de `1-2. Infraestructura/chef/cookbooks/`:
 
-1. `/docker/`: Instala Docker Engine, dependencias, GPG oficial de Docker y agrega el usuario `vagrant` al grupo docker.
-2. `/microservices/`: Despliega los contenedores de `users-service`, `products-service` y `orders-service` (2 instancias por servicio) con reinicio automático (`restart: always`).
-3. `/haproxy/`: Instala HAProxy y genera el archivo `/etc/haproxy/haproxy.cfg` a partir de una plantilla dinámica (`haproxy.cfg.erb`).
+1. `/docker/`: Instala paquetes de transporte, descarga la llave GPG oficial de Docker, configura el repositorio APT oficial según la arquitectura de la máquina (`amd64` / `arm64`), instala Docker Engine, Containerd, Docker Compose Plugin y agrega al usuario `vagrant` al grupo `docker`.
+2. `/microservices/`: Orquesta declarativamente las instancias de los servicios `users`, `products` y `orders` con Docker Compose a través de una plantilla ERB dinámica.
+3. `/haproxy/`: Instala HAProxy, socat y renderiza `/etc/haproxy/haproxy.cfg` a partir de la plantilla `haproxy.cfg.erb`.
 
 Estructura de roles y nodos:
 - En `/chef/roles/`:
-  - `microservices.rb`: Invoca `recipe[docker]` y `recipe[microservices]`.
-  - `haproxy.rb`: Invoca `recipe[haproxy]`.
+  - `microservices.rb`: Asigna `recipe[docker]` y `recipe[microservices]`.
+  - `haproxy.rb`: Asigna `recipe[haproxy]`.
 - En `/chef/nodes/`:
-  - `vm-microservices.json`: Le asigna el rol `microservices` al nodo.
-  - `vm-haproxy.json`: Le asigna el rol `haproxy` al nodo.
+  - `vm-microservices.json`: Vincula el rol `microservices` al nodo.
+  - `vm-haproxy.json`: Vincula el rol `haproxy` al nodo.
 
-### <a id="12-cambios-y-arreglos-que-le-meti"></a>1.2. Cambios y arreglos que le metí (Pepe / Alejandro)
+### <a id="12-optimizaciones-de-infraestructura"></a>1.2. Optimizaciones de Infraestructura y Orquestación
 
-Mano, revisé todo con lupa y cuadré varias cositas que nos podían hacer perder puntos con el profe:
-
-1. **Memoria de las VMs en `Vagrantfile`:** El Vagrantfile pedía 3GB + 3GB + 2GB = 8GB de RAM. Como muchos portátiles tienen 8GB o 16GB con apps abiertas, eso iba a crashear por falta de RAM física. Le bajé a 1GB para haproxy, 1.5GB para microservices y 1GB para control-node (~3.5GB en total). Con eso vuela y los contenedores `http-echo` solo pesan como 5MB cada uno.
-2. **Ciclo reproducible `terraform destroy` y `terraform apply` (Requerimiento 4):**
-   - Antes Terraform solo creaba con `null_resource`, pero si tirabas `terraform destroy` no borraba nada en las VMs destino.
-   - Le metí un `provisioner "remote-exec" { when = destroy }` a cada máquina en `main.tf`. Ahora si ejecutas `terraform destroy`, se conecta por SSH a las VMs y purga los contenedores, Docker, HAProxy y Cinc, dejándolas como recién salidas de fábrica.
-   - Al volver a correr `terraform apply`, reconstruye absolutamente todo desde cero sin intervención manual. ¡Cumple el 100% de la reproducibilidad que pide el parcial!
-3. **Autenticación SSH por Llave (Requerimiento 1):** El enunciado pide explícitamente "llaves SSH correspondientes". En lugar de meter contraseñas en plano en Terraform, ahora Terraform usa `/home/vagrant/.ssh/id_rsa` para conectarse a las máquinas target.
-4. **Idempotencia con Triggers y Hashes:** Si modificas una receta de Chef, Terraform calcula un `sha1` de los archivos y sabe exactamente cuál VM tiene cambios pendientes sin tener que destruir la otra.
-5. **Microservicios orquestados con Docker Compose:** En vez de tirar comandos sueltos de `docker run` imperativos, pasé el despliegue a **Docker Compose declarativo** (`docker-compose.yml.erb` -> `/opt/microapp/docker-compose.yml`). Ahora Chef genera el archivo Compose a partir de los atributos y ejecuta `docker compose up -d`. Si el profe pregunta cómo se administran los contenedores en la máquina, le mostramos el `docker-compose.yml` y queda encantado.
+1. **Dimensionamiento y Estabilidad de Recursos:**  
+   Se ajustaron las asignaciones de memoria en el `Vagrantfile` (1024 MB para `vm-haproxy`, 1536 MB para `vm-microservices` y 1024 MB para `control-node`, totalizando ~3.5 GB), permitiendo una ejecución estable, fluida y sin agotamiento de memoria física.
+2. **Ciclo de Vida 100% Reproducible (`terraform destroy` y `terraform apply`):**  
+   Se implementaron provisioners `remote-exec` con la directiva `when = destroy` en `main.tf`. Al invocar `terraform destroy`, Terraform purga de manera controlada los contenedores, los volúmenes, Docker, HAProxy y los directorios de trabajo. Un `terraform apply` posterior reconstruye el entorno completo desde cero de forma idéntica e idempotente.
+3. **Autenticación SSH Criptográfica:**  
+   Se configuró el uso exclusivo de llaves SSH (`/home/vagrant/.ssh/id_rsa`) en las conexiones de Terraform, garantizando seguridad y eliminando credenciales en texto plano.
+4. **Idempotencia mediante Hashes de Contenido:**  
+   Terraform calcula el hash criptográfico SHA1 de los cookbooks y roles de Chef (`triggers`). Si se modifica una receta, únicamente se re-aprovisiona la máquina virtual directamente afectada.
+5. **Orquestación Declarativa con Docker Compose:**  
+   En lugar de ejecutar comandos sueltos de `docker run`, los microservicios se definen declarativamente en `/opt/microapp/docker-compose.yml` mediante la plantilla `docker-compose.yml.erb`. Esto centraliza el control de los 6 contenedores, sus puertos de host y contenedor, sus etiquetas y su política `restart: always`.
 
 ---
 
 # <a id="2-haproxy"></a>2. HAProxy
 
-En el cookbook `/haproxy/` la receta instala el paquete `haproxy` y renderiza el template `haproxy.cfg.erb`.
+En el nodo `vm-haproxy`, HAProxy actúa como balanceador de carga perimetral y punto de entrada unificado para todas las peticiones externas.
 
-### <a id="que-hace-haproxycfg"></a>¿Que hace haproxy.cfg?
+### <a id="21-arquitectura-de-haproxycfg"></a>2.1. Arquitectura de haproxy.cfg
 
-1. **Frontend en puerto 80:** Recibe todo el tráfico externo y clasifica mediante ACLs según el prefijo:
-   - `/api/users` -> redirige al backend `users_back`
-   - `/api/products` -> redirige al backend `products_back`
-   - `/api/orders` -> redirige al backend `orders_back`
-   - Cualquier otra ruta -> devuelve un 404 limpio indicando las rutas válidas.
-2. **Backends con Round-Robin:** Cada backend tiene 2 servidores apuntando a `vm-microservices`:
-   - `users`: puertos 3001 y 3011 (ambos mapeados al puerto interno 3001 del microservicio).
-   - `products`: puertos 3002 y 3012 (mapeados al puerto interno 3002).
-   - `orders`: puertos 3003 y 3013 (mapeados al puerto interno 3003).
-3. **Dashboard de Estadísticas en puerto 8080:** Protegido con usuario `admin` y clave `admin123`.
+1. **Frontend `http_front` en puerto 80:**  
+   Recibe el tráfico HTTP y aplica listas de control de acceso (ACLs) según el prefijo de la URL:
+   - Prefijo `/api/users` -> redirige a `users_back`
+   - Prefijo `/api/products` -> redirige a `products_back`
+   - Prefijo `/api/orders` -> redirige a `orders_back`
+   - Cualquier otra ruta no mapeada devuelve un código `404 Not Found` informando las rutas disponibles.
+2. **Backends con Balanceo Round-Robin:**  
+   Cada backend distribuye la carga entre 2 instancias del microservicio alojadas en `vm-microservices`:
+   - `users_back`: `users1` (puerto 3001) y `users2` (puerto 3011).
+   - `products_back`: `products1` (puerto 3002) y `products2` (puerto 3012).
+   - `orders_back`: `orders1` (puerto 3003) y `orders2` (puerto 3013).
+3. **Dashboard de Métricas en puerto 8080:**  
+   Panel web accesible en `http://192.168.100.2:8080/stats`, protegido con autenticación básica HTTP (`admin` / `admin123`). Permite visualizar en tiempo real el estado de cada servidor, tráfico cursado y tasas de error.
 
-### <a id="mejoras-que-le-cuadre-al-balanceo"></a>Mejoras que le cuadré al balanceo
+### <a id="22-resiliencia-y-alta-disponibilidad"></a>2.2. Resiliencia, Monitoreo y Alta Disponibilidad
 
-1. **Fuente Única de Verdad (Atributos):** Creé `chef/cookbooks/microservices/attributes/default.rb` y `haproxy/attributes/default.rb`. Ahora los puertos, número de réplicas e IPs están en atributos compartidos. Si el profe te dice en caliente *"agrega una tercera réplica de orders"*, solo cambias `instances: 3` en atributos y le das `terraform apply`, sin tener que modificar a mano ni recetas ni el archivo `.cfg`.
-2. **Tolerancia a fallos inmediata (`option redispatch` y `retries 3`):** Si tumbas un contenedor, mientras HAProxy detecta el fallo en 2-4 segundos, las peticiones que alcancen a pegarle al puerto caído se reenvían automáticamente al otro contenedor vivo. El cliente nunca ve un error 502/503.
-3. **Cabecera `X-Backend-Server`:** Le agregué al HAProxy que devuelva en los headers el nombre del servidor (`users1`, `users2`, etc.). Con eso demuestras el round-robin en vivo de manera clarísima en el curl.
-4. **Script de prueba automatizado:** Creé `scripts/prueba-haproxy.sh` para demostrar en vivo el round-robin, tumbar un contenedor con `docker stop`, mostrar que se marca en `DOWN` en el dashboard y que el servicio sigue respondiendo sin interrupciones.
+1. **Configuración Centralizada (Fuente Única de Verdad):**  
+   Los puertos, número de réplicas e IPs se definen en `cookbooks/microservices/attributes/default.rb` y `cookbooks/haproxy/attributes/default.rb`. La plantilla `haproxy.cfg.erb` se compila a partir de estos atributos, asegurando sincronización total entre la infraestructura y el balanceador.
+2. **Health Checks Activos:**  
+   Directiva `check inter 2s fall 2 rise 2` con `option httpchk GET /health`. Si un contenedor se detiene, en 4 segundos pasa a estado `DOWN`. Al reanudarse, tras 2 chequeos exitosos retorna a `UP`.
+3. **Conmutación por Error sin Caídas (`Zero-Downtime Failover`):**  
+   Mediante `retries 3` y `option redispatch`, si un contenedor falla justo cuando entra una petición, HAProxy reenvía de inmediato el paquete a la instancia sana sin retornar errores HTTP 502/503 al cliente.
+4. **Trazabilidad HTTP:**  
+   Se inyecta la cabecera `X-Backend-Server: <nombre_servidor>` en cada respuesta HTTP, permitiendo auditar visualmente el balanceo secuencial con herramientas como `curl -i`.
 
 ---
 
-# <a id="3-kubernetes"></a>3. Kubernetes (Punto 3 Terminado)
+# <a id="3-kubernetes"></a>3. Kubernetes (Orquestación en la Nube)
 
-Para el Problema 3 creamos la carpeta `3. Kubernetes/` con todos los manifiestos declarativos y scripts de despliegue.
+En la carpeta `3. Kubernetes/` se encuentra la solución cloud-native para orquestar los microservicios en un clúster gestionado de **Azure Kubernetes Service (AKS)** o en clústeres locales.
 
 ### <a id="31-arquitectura-de-los-manifiestos"></a>3.1. Arquitectura de los Manifiestos (`3. Kubernetes/manifests/`)
 
-- `00-namespace.yaml`: Crea el namespace aislado `microapp`.
-- `01-users.yaml`: 
-  - `Deployment`: 2 réplicas de `hashicorp/http-echo:1.0.0` escuchando en su puerto interno `3001`. Mediante la Downward API de K8s, inyectamos el nombre del Pod (`$(POD_NAME)`) en la respuesta HTTP para evidenciar el balanceo. Incluye `livenessProbe` y `readinessProbe`.
-  - `Service`: Tipo `ClusterIP`, exponiendo el puerto `3001` hacia el clúster.
-- `02-products.yaml`: 
-  - `Deployment`: 2 réplicas en puerto interno `3002`.
-  - `Service`: Tipo `ClusterIP`, exponiendo el puerto `3002`.
-- `03-orders.yaml`: 
-  - `Deployment`: 2 réplicas iniciales en puerto interno `3003` (listo para escalar a 4).
-  - `Service`: Tipo `ClusterIP`, exponiendo el puerto `3003`.
-- `04-ingress.yaml`: Ingress con clase `nginx` que enruta el tráfico externo:
-  - `/api/users` -> `users-svc:3001`
-  - `/api/products` -> `products-svc:3002`
-  - `/api/orders` -> `orders-svc:3003`
+- `00-namespace.yaml`: Crea el namespace aislado `microapp` para separar la aplicación de los servicios de sistema.
+- `01-users.yaml`, `02-products.yaml`, `03-orders.yaml`:
+  - **Deployments:** Despliegan 2 réplicas del microservicio correspondiente (`hashicorp/http-echo:1.0.0`) escuchando en sus puertos internos dedicados (`3001`, `3002`, `3003`). Utilizan la **Downward API** de Kubernetes para inyectar el nombre del pod (`$(POD_NAME)`) en la respuesta HTTP, permitiendo comprobar qué pod atiende cada solicitud. Incluyen `livenessProbe`, `readinessProbe` y límites de CPU y memoria.
+  - **Services:** De tipo `ClusterIP`. Exponen los puertos internos de forma privada dentro de la red del clúster (`users-svc:3001`, `products-svc:3002`, `orders-svc:3003`), aislando el tráfico backend del acceso directo a Internet.
+- `04-ingress.yaml`: Recurso Ingress con `ingressClassName: nginx` que actúa como puerta de enlace externa, enrutando por prefijo de ruta hacia los respectivos Services `ClusterIP`.
 
-### <a id="32-scripts-listos-para-azure-y-local"></a>3.2. Scripts listos para Azure y Local (`3. Kubernetes/scripts/`)
+### <a id="32-scripts-de-despliegue"></a>3.2. Scripts de Despliegue y Automatización (`3. Kubernetes/scripts/`)
 
-- `deploy-aks.sh`: Automatiza la creación en Azure:
-  1. Valida la sesión de Azure CLI / Cloud Shell.
-  2. Registra proveedores `Microsoft.Compute` y `Microsoft.ContainerService`.
-  3. Crea el Resource Group `rg-microapp-aks` en región económica (`eastus`).
-  4. Levanta el clúster AKS con tamaño económico para suscripción estudiante (`Standard_B2s`).
-  5. Instala el Ingress Controller NGINX oficial.
-  6. Aplica todos los manifiestos YAML de `manifests/`.
-- `destroy-aks.sh`: **¡Súper importante para los créditos!** Ejecutas `bash destroy-aks.sh` y elimina el Resource Group completo en Azure para no gastar los 100 USD de estudiante.
-- `prueba-k8s.sh`: Script que ejecuta en orden todas las verificaciones exigidas por el profesor:
-  - `kubectl get all -n microapp` y `kubectl get ingress` (Requerimiento 14).
-  - Prueba de conectividad interna a los ClusterIP Services (Requerimiento 11).
-  - Pruebas externas con `curl` hacia el Ingress en `/api/users`, `/api/products`, `/api/orders` (Requerimiento 12).
-  - Escalado horizontal de `orders-deployment` a 4 réplicas con `kubectl scale` y verificación de tráfico en las 4 instancias sin cortes (Requerimiento 13).
-- `deploy-local.sh`: Permite desplegar y probar todo localmente con `kind` o `minikube` sin gastar ni un peso de Azure.
+- `deploy-aks.sh`: Automatiza el aprovisionamiento completo en Azure:
+  1. Valida la sesión activa de Azure CLI o Azure Cloud Shell.
+  2. Registra los proveedores `Microsoft.Compute` y `Microsoft.ContainerService`.
+  3. Crea el Resource Group `rg-microapp-aks` en la región permitida (`eastus`).
+  4. Crea el clúster AKS con tamaño de VM optimizado (`Standard_B2s`).
+  5. Instala el Ingress Controller NGINX y vincula credenciales de `kubectl`.
+  6. Aplica todos los manifiestos YAML y espera a que los pods alcancen el estado `Running`.
+- `destroy-aks.sh`: Script de limpieza que elimina el Resource Group completo en Azure de forma no bloqueante (`--no-wait`), evitando consumos innecesarios de crédito en la suscripción.
+- `prueba-k8s.sh`: Script de validación integral:
+  - Inspecciona el estado de todos los recursos con `kubectl get all -n microapp`.
+  - Verifica la conectividad interna directa a los Services `ClusterIP`.
+  - Evalúa el enrutamiento HTTP externo a través del Ingress Controller (`/api/users`, `/api/products`, `/api/orders`).
+  - Realiza la prueba de escalabilidad horizontal elástica aumentando `orders-deployment` a 4 réplicas con `kubectl scale`, validando la distribución de tráfico entre los 4 pods sin caída de servicio.
+- `deploy-local.sh`: Provisión alternativa para clústeres locales (KinD / Minikube) con mapeo de puertos 80/443 para pruebas previas sin costo.
 
-### <a id="33-opcional-terraform--aks"></a>3.3. Opcional: Terraform + AKS (`3. Kubernetes/terraform-aks/`)
+### <a id="33-modulo-opcional-terraform-aks"></a>3.3. Módulo Opcional: Terraform + AKS (`3. Kubernetes/terraform-aks/`)
 
-Incluimos los archivos `.tf` (`main.tf`, `variables.tf`, `providers.tf`, `outputs.tf`) para desplegar AKS automáticamente usando Terraform, por si el profe pregunta por el punto opcional.
+Contiene los manifiestos de Terraform (`main.tf`, `variables.tf`, `providers.tf`, `outputs.tf`) para aprovisionar el clúster de AKS mediante Infraestructura como Código utilizando el proveedor `azurerm`.
 
 ---
 
-# <a id="4-probar"></a>4. Probar
+# <a id="4-guia-de-ejecucion-y-pruebas"></a>4. Guía de Ejecución y Pruebas
 
-### <a id="probar-infraestructura"></a>4.1. Probar Infraestructura (Problema 1)
+### <a id="41-verificacion-infraestructura"></a>4.1. Verificación de Infraestructura (Problema 1)
 
-1. En tu máquina anfitriona, en la raíz del repo:
+1. En la máquina anfitriona, dentro de la raíz del proyecto:
    ```bash
    vagrant up
    ```
-   *(Esto crea las 3 máquinas virtuales y ejecuta automáticamente el provisioner de Terraform + Chef)*.
-2. Entra al nodo de control:
+2. Conectarse a la máquina de control:
    ```bash
    vagrant ssh control-node
    ```
-3. Verifica el estado inicial de toda la infraestructura con el script de verificación:
+3. Ejecutar la inspección del estado de los nodos:
    ```bash
    bash "/vagrant/1-2. Infraestructura/scripts/verificar.sh"
    ```
-4. **Demostración de Reproducibilidad (terraform destroy / apply):**
+4. **Validación del Ciclo de Reproducibilidad:**
    ```bash
    cd "/vagrant/1-2. Infraestructura/terraform"
    
-   # 1. Destruye el aprovisionamiento
+   # 1. Destrucción controlada
    terraform destroy -auto-approve
    
-   # Verifica que los contenedores y HAProxy fueron eliminados limpiamente
-   ssh vm-microservices "docker ps"              # Sale vacío
-   ssh vm-haproxy "systemctl status haproxy"     # No instalado / inactivo
+   # Confirmar que los nodos quedaron desprovisionados
+   ssh vm-microservices "docker ps"              # Salida vacía
+   ssh vm-haproxy "systemctl status haproxy"     # Servicio inactivo / no encontrado
    
-   # 2. Vuelve a aprovisionar
+   # 2. Re-aprovisionamiento idéntico
    terraform apply -auto-approve
    
-   # 3. Verifica que todo volvió a quedar idéntico y funcional
+   # 3. Confirmar que la infraestructura vuelve a estar operativa
    bash "/vagrant/1-2. Infraestructura/scripts/verificar.sh"
    ```
 
-### <a id="probar-haproxy"></a>4.2. Probar HAProxy (Problema 2)
+### <a id="42-verificacion-haproxy"></a>4.2. Verificación de Balanceo y Failover (Problema 2)
 
-1. **Dashboard web:**
-   Abre en el navegador de tu máquina host:  
-   👉 [http://192.168.100.2:8080/stats](http://192.168.100.2:8080/stats)  
-   Usuario: `admin` | Contraseña: `admin123`  
-   *(Verás los backends `users_back`, `products_back` y `orders_back` en verde / UP)*.
-2. **Prueba automática de Balanceo y Failover:**
-   Desde el `control-node`:
+1. **Acceso al Dashboard de Métricas:**  
+   Navegar a [http://192.168.100.2:8080/stats](http://192.168.100.2:8080/stats) (Usuario: `admin` | Contraseña: `admin123`). Confirmar que los 3 backends reportan estado `UP` en color verde.
+2. **Validación Automatizada de Balanceo y Detección de Caídas:**  
+   Desde `control-node`:
    ```bash
    bash "/vagrant/1-2. Infraestructura/scripts/prueba-haproxy.sh" users 1
    ```
-   El script hace:
-   - 6 peticiones a `/api/users` mostrando cómo alterna entre `users1` y `users2` (Round-Robin).
-   - Detiene el contenedor `users-service-1` con `docker stop`.
-   - Lanza peticiones continuas demostrando que el cliente no sufre caídas (0 errores).
-   - Muestra el servidor en estado `DOWN` en HAProxy.
-   - Vuelve a iniciar el contenedor con `docker start` y muestra su recuperación a `UP`.
+   El script ejecuta:
+   - Peticiones HTTP continuas mostrando la alternancia Round-Robin entre `users1` y `users2`.
+   - Detención del contenedor `users-service-1` con `docker stop`.
+   - Envío de ráfagas HTTP demostrando cero errores de cliente mientras HAProxy marca el nodo en `DOWN`.
+   - Reactivación del contenedor con `docker start` y su retorno automático a estado `UP`.
 
-### <a id="probar-kubernetes"></a>4.3. Probar Kubernetes (Problema 3)
+### <a id="43-verificacion-kubernetes"></a>4.3. Verificación de Kubernetes en Azure AKS (Problema 3)
 
-#### En Azure AKS (Para la Sustentación):
-1. Abre Azure Cloud Shell (o tu terminal con `az login`) y clona el repositorio en la rama `problema3pepe`:
-   ```bash
-   git clone -b problema3pepe https://github.com/Katar012/Microproyecto2.git
-   cd Microproyecto2/"3. Kubernetes"/scripts
-   ```
-2. Despliega el clúster y la aplicación:
-   ```bash
-   bash deploy-aks.sh
-   ```
-3. Ejecuta la batería de pruebas requerida por el profesor:
-   ```bash
-   bash prueba-k8s.sh
-   ```
-4. **¡DESTRUIR EL CLÚSTER AL TERMINAR LA SUSTENTACIÓN!**:
-   ```bash
-   bash destroy-aks.sh
-   ```
-
-#### En Local (Para ensayar sin costo):
+#### Despliegue en Azure Cloud Shell / Azure CLI:
 ```bash
-cd "3. Kubernetes/scripts"
-bash deploy-local.sh
+# 1. Clonar el repositorio y posicionarse en la rama de trabajo
+git clone -b problema3pepe https://github.com/Katar012/Microproyecto2.git
+cd Microproyecto2/"3. Kubernetes"/scripts
+
+# 2. Ejecutar el despliegue automatizado del clúster AKS
+bash deploy-aks.sh
+
+# 3. Ejecutar las pruebas de verificación y escalado horizontal
 bash prueba-k8s.sh
+
+# 4. Al finalizar la evaluación, destruir el clúster para liberar recursos
+bash destroy-aks.sh
 ```
 
 ---
 
-# <a id="notas-para-desarrollo"></a>NOTAS PARA DESARROLLO Y SUSTENTACIÓN
+# <a id="5-documentacion-adicional"></a>5. Documentación Adicional
 
-* **Guía Completa para Exponer:** Revisa el archivo [`GUIA_SUSTENTACION.md`](./GUIA_SUSTENTACION.md). Contiene el guión paso a paso de qué decir, cómo funciona cada componente, y cómo responder a cualquier cambio en caliente que pida el profesor.
-* Contraseña de las VMs de Vagrant: `vagrant`
-* Dashboard de HAProxy: [http://192.168.100.2:8080/stats](http://192.168.100.2:8080/stats) (`admin / admin123`).
-* Namespace de Kubernetes: `microapp`.
-* **¡OJO CON LOS CRÉDITOS DE AZURE!** No dejes el clúster de AKS prendido de noche. Destrúyelo con `destroy-aks.sh`.
+* Para una explicación conceptual profunda, análisis de componentes y guía detallada de preguntas y modificaciones en caliente, consultar el archivo [`GUIA_SUSTENTACION.md`](./GUIA_SUSTENTACION.md).
+* Credenciales de acceso predeterminadas:
+  * SSH en máquinas locales: usuario `vagrant`, clave `vagrant` (o llave `id_rsa`).
+  * Panel HAProxy: usuario `admin`, contraseña `admin123`.
 
-### <a id="arbol-de-carpetas"></a>ARBOL DE CARPETAS ACTUALIZADO
+### <a id="arbol-de-carpetas"></a>Árbol de Carpetas del Proyecto
 
 ```text
 Microproyecto2/
