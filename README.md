@@ -72,7 +72,7 @@ No hay nada aun.
 
 Primero clona el repo y posicionate en la raiz.
 
-### <a id="probar-infraestructura"></a>Probar Infraestructura
+### <a id="probar-infraestructura"></a>4.1. Probar Infraestructura
 
 1. `vagrant up` levantamos maquinas
 2. `vagrant ssh control-node` entramos a control-node
@@ -81,12 +81,16 @@ Primero clona el repo y posicionate en la raiz.
 5. `ssh vagrant@192.168.100.2 "sudo systemctl status haproxy"` verificamos que vm-haproxy tenga haproxy
 6. falta adecuar para que `terraform destroy` y `terraform apply` demuestren que el aprovisionamiento es reproducible
 
-### <a id="probar-haproxy"></a>Probar HAProxy
+### <a id="probar-haproxy"></a>4.2. Probar HAProxy
 
 1. Ingresar al <a href="http://192.168.100.2:8080/stats">Dashboard</a>
 2. `for i in {1..6}; do curl -s http://192.168.100.2/api/users; echo ""; done` verificar balanceo entre dos nodos del servicio users
 3. `ssh vagrant@192.168.100.3 "docker ps"` desde control-node 
 4. Tomar cualquier CONTAINER ID y ejecutar `ssh vagrant@192.168.100.3 "docker stop [CONTAINER_ID]"`
 5. Verificar nuevamente en el dashboard, y volver a correr el punto 2 hacia el servicio del cual se tumbo un contenedor
+
+### <a id="probar-kubernetes"></a>4.3. Probar Kubernetes
+
+1. No hay nada aun.
 
 ---
