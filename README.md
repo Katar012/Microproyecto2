@@ -11,6 +11,7 @@
   * [Probar HAProxy](#probar-haproxy)
   * [Probar Kubernetes](#probar-kubernetes)
 * [Notas para desarrollo](#notas-para-desarrollo)
+
 ---
 
 # <a id="que-hay-hecho"></a>¿Que hay hecho?
@@ -107,47 +108,48 @@ Primero clona el repo y posicionate en la raiz.
 ### <a id="arbol-de-carpetas"></a>ARBOL DE CARPETAS
 
 ---
-Microproyecto2
-├── 1-2. Infraestructura
-│   ├── chef
-│   │   ├── cookbooks
-│   │   │   ├── docker
-│   │   │   │   ├── metadata.rb
-│   │   │   │   └── recipes
-│   │   │   │       └── default.rb
-│   │   │   ├── haproxy
-│   │   │   │   ├── metadata.rb
-│   │   │   │   ├── notas.txt
-│   │   │   │   ├── recipes
-│   │   │   │   │   └── default.rb
-│   │   │   │   └── templates
-│   │   │   │       └── default
-│   │   │   │           └── haproxy.cfg.erb
-│   │   │   ├── microservices
-│   │   │   │   ├── metadata.rb
-│   │   │   │   └── recipes
-│   │   │   │       └── default.rb
-│   │   │   └── notas.txt
-│   │   ├── nodes
-│   │   │   ├── notas.txt
-│   │   │   ├── vm-haproxy.json
-│   │   │   └── vm-microservices.json
-│   │   ├── notas.txt
-│   │   ├── roles
-│   │   │   ├── haproxy.rb
-│   │   │   ├── microservices.rb
-│   │   │   └── notas.txt
-│   │   └── solo.rb
-│   └── terraform
-│       ├── main.tf
-│       ├── outputs.tf
-│       ├── providers.tf
-│       ├── terraform.tfstate
-│       ├── terraform.tfstate.backup
-│       └── variables.tf
-├── 3. Kubernetes
+```text
+Microproyecto2/
+├── 1-2. Infraestructura/
+│   ├── chef/
+│   │   ├── cookbooks/
+│   │   │   ├── docker/
+│   │   │   │   ├── metadata.rb
+│   │   │   │   └── recipes/
+│   │   │   │       └── default.rb
+│   │   │   ├── haproxy/
+│   │   │   │   ├── metadata.rb
+│   │   │   │   ├── notas.txt
+│   │   │   │   ├── recipes/
+│   │   │   │   │   └── default.rb
+│   │   │   │   └── templates/
+│   │   │   │       └── default/
+│   │   │   │           └── haproxy.cfg.erb
+│   │   │   ├── microservices/
+│   │   │   │   ├── metadata.rb
+│   │   │   │   └── recipes/
+│   │   │   │       └── default.rb
+│   │   │   └── notas.txt
+│   │   ├── nodes/
+│   │   │   ├── notas.txt
+│   │   │   ├── vm-haproxy.json
+│   │   │   └── vm-microservices.json
+│   │   ├── roles/
+│   │   │   ├── haproxy.rb
+│   │   │   ├── microservices.rb
+│   │   │   └── notas.txt
+│   │   ├── notas.txt
+│   │   └── solo.rb
+│   └── terraform/
+│       ├── main.tf
+│       ├── outputs.tf
+│       ├── providers.tf
+│       ├── terraform.tfstate
+│       ├── terraform.tfstate.backup
+│       └── variables.tf
+├── 3. Kubernetes/
 ├── README.md
 └── Vagrantfile
-
+```
 ---
 
