@@ -79,11 +79,12 @@ No se evalúa la lógica interna de negocio de los microservicios (por eso usamo
     - `users`: puerto base 3001, 2 instancias.
     - `products`: puerto base 3002, 2 instancias.
     - `orders`: puerto base 3003, 2 instancias.
-  - `cookbooks/microservices/recipes/default.rb`: Recorre de forma dinámica los atributos. Para cada servicio levanta sus instancias con `docker run`:
+  - `cookbooks/microservices/templates/default/docker-compose.yml.erb`: Plantilla que genera `/opt/microapp/docker-compose.yml` de forma dinámica a partir de los atributos.
+  - `cookbooks/microservices/recipes/default.rb`: En lugar de ejecutar comandos sueltos de `docker run` imperativos, orquesta los microservicios usando **Docker Compose declarativo**. Renderiza el archivo `docker-compose.yml` y ejecuta `docker compose up -d --remove-orphans`:
     - Contenedor 1 de users: mapea puerto host `3001` -> contenedor `3001`.
     - Contenedor 2 de users: mapea puerto host `3011` -> contenedor `3001`.
-    - Configura `--restart always` para que si la máquina virtual se reinicia, Docker levante automáticamente los contenedores.
-    - Asigna etiquetas (`labels`) con un hash spec; si la configuración no ha cambiado, no recrea el contenedor (principio de **idempotencia**).
+    - Configura `restart: always` para que si la máquina virtual se reinicia, Docker levante automáticamente los contenedores.
+    - Facilita la administración con comandos estándar (`docker compose ps`, `docker compose logs`, `docker compose down`).
   - `roles/microservices.rb` y `roles/haproxy.rb`: Agrupan las recetas que corresponden a cada función.
   - `nodes/vm-microservices.json` y `nodes/vm-haproxy.json`: Asocian cada máquina con su respectivo rol.
 

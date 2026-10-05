@@ -40,8 +40,8 @@ execute 'apt-get update docker repo' do
   action :nothing
 end
 
-# 6. Instalar Docker Engine y componentes
-%w(docker-ce docker-ce-cli containerd.io).each do |pkg|
+# 6. Instalar Docker Engine, CLI, containerd y plugin de Docker Compose
+%w(docker-ce docker-ce-cli containerd.io docker-compose-plugin).each do |pkg|
   package pkg do
     action :install
   end

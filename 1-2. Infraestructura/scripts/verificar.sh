@@ -20,6 +20,7 @@ $SSH vagrant@"$MICRO" '
   if command -v docker >/dev/null; then
     docker ps -a --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}\t{{.Status}}"
     echo "restart policy: $(docker inspect -f "{{.Name}}={{.HostConfig.RestartPolicy.Name}}" $(docker ps -aq) 2>/dev/null | tr "\n" " ")"
+    [ -f /opt/microapp/docker-compose.yml ] && echo "docker-compose: /opt/microapp/docker-compose.yml (Activo)"
   else
     echo "Docker NO instalado"
   fi

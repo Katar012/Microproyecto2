@@ -107,13 +107,14 @@ resource "null_resource" "provision_microservices" {
     when = destroy
     inline = [
       "echo '=== [terraform destroy] Limpiando vm-microservices ==='",
+      "if [ -f /opt/microapp/docker-compose.yml ]; then sudo docker compose -f /opt/microapp/docker-compose.yml down -v >/dev/null 2>&1 || true; fi",
       "if command -v docker >/dev/null 2>&1; then sudo docker rm -f $(sudo docker ps -aq) >/dev/null 2>&1 || true; sudo docker system prune -af >/dev/null 2>&1 || true; fi",
       "sudo systemctl disable --now docker.socket docker containerd >/dev/null 2>&1 || true",
       "while sudo fuser /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock >/dev/null 2>&1; do sleep 3; done",
       "sudo DEBIAN_FRONTEND=noninteractive apt-get purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras >/dev/null 2>&1 || true",
       "sudo DEBIAN_FRONTEND=noninteractive apt-get purge -y cinc >/dev/null 2>&1 || true",
       "sudo DEBIAN_FRONTEND=noninteractive apt-get autoremove -y >/dev/null 2>&1 || true",
-      "sudo rm -rf /var/lib/docker /var/lib/containerd /etc/apt/sources.list.d/docker.list /etc/apt/keyrings/docker.gpg /tmp/chef /opt/cinc /etc/cinc /var/cinc",
+      "sudo rm -rf /var/lib/docker /var/lib/containerd /etc/apt/sources.list.d/docker.list /etc/apt/keyrings/docker.gpg /tmp/chef /opt/cinc /etc/cinc /var/cinc /opt/microapp",
       "echo 'vm-microservices limpia: sin contenedores, sin Docker y sin Cinc'",
     ]
   }

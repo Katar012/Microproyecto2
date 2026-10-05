@@ -67,6 +67,7 @@ Mano, revisé todo con lupa y cuadré varias cositas que nos podían hacer perde
    - Al volver a correr `terraform apply`, reconstruye absolutamente todo desde cero sin intervención manual. ¡Cumple el 100% de la reproducibilidad que pide el parcial!
 3. **Autenticación SSH por Llave (Requerimiento 1):** El enunciado pide explícitamente "llaves SSH correspondientes". En lugar de meter contraseñas en plano en Terraform, ahora Terraform usa `/home/vagrant/.ssh/id_rsa` para conectarse a las máquinas target.
 4. **Idempotencia con Triggers y Hashes:** Si modificas una receta de Chef, Terraform calcula un `sha1` de los archivos y sabe exactamente cuál VM tiene cambios pendientes sin tener que destruir la otra.
+5. **Microservicios orquestados con Docker Compose:** En vez de tirar comandos sueltos de `docker run` imperativos, pasé el despliegue a **Docker Compose declarativo** (`docker-compose.yml.erb` -> `/opt/microapp/docker-compose.yml`). Ahora Chef genera el archivo Compose a partir de los atributos y ejecuta `docker compose up -d`. Si el profe pregunta cómo se administran los contenedores en la máquina, le mostramos el `docker-compose.yml` y queda encantado.
 
 ---
 
@@ -262,8 +263,11 @@ Microproyecto2/
 │   │   │   │   ├── attributes/
 │   │   │   │   │   └── default.rb
 │   │   │   │   ├── metadata.rb
-│   │   │   │   └── recipes/
-│   │   │   │       └── default.rb
+│   │   │   │   ├── recipes/
+│   │   │   │   │   └── default.rb
+│   │   │   │   └── templates/
+│   │   │   │       └── default/
+│   │   │   │           └── docker-compose.yml.erb
 │   │   │   └── notas.txt
 │   │   ├── nodes/
 │   │   │   ├── notas.txt
