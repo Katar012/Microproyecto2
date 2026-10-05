@@ -3,6 +3,10 @@
 
 Vagrant.configure("2") do |config|
 
+  # En equipos con Hyper-V activo (Docker Desktop/WSL2) o poca RAM libre, VirtualBox
+  # arranca mas lento y Vagrant aborta a los 5 min por defecto. Le damos 15 min.
+  config.vm.boot_timeout = 900
+
   # 1. vm-haproxy
   config.vm.define "vm-haproxy" do |haproxy|
     haproxy.vm.box = "bento/ubuntu-22.04"
@@ -10,8 +14,8 @@ Vagrant.configure("2") do |config|
     haproxy.vm.hostname = "vm-haproxy"
     
     haproxy.vm.provider "virtualbox" do |v|
-      v.cpus = 2
-      v.memory = 1024   # HAProxy + cinc-client caben de sobra en 1 GB
+      v.cpus = 1
+      v.memory = 768
     end
 
     # Habilita autenticación por contraseña y prepara llaves SSH autorizadas
@@ -37,8 +41,8 @@ Vagrant.configure("2") do |config|
     microservices.vm.hostname = "vm-microservices"
     
     microservices.vm.provider "virtualbox" do |v|
-      v.cpus = 2
-      v.memory = 1536   # Docker + 6 contenedores http-echo (~5 MB c/u)
+      v.cpus = 1
+      v.memory = 1024
     end
 
     # Habilita autenticación por contraseña y prepara llaves SSH autorizadas
@@ -64,7 +68,7 @@ Vagrant.configure("2") do |config|
     control.vm.hostname = "control-node"
     
     control.vm.provider "virtualbox" do |v|
-      v.cpus = 2
+      v.cpus = 1
       v.memory = 1024
     end
 
