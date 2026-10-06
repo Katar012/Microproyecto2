@@ -10,7 +10,8 @@
 * [4. Como probar](#4-como-probar)
   * [4.1 Probar Infraestructura](#41-probar-infraestructura)
   * [4.2 Probar HAProxy](#42-probar-haproxy)
-  * [4.3 Probar Kubernetes](#43-probar-kubernetes)
+  * [4.3 Probar Microservicios](#43-probar-microservicios)
+  * [4.3 Probar Kubernetes](#44-probar-kubernetes)
 * [NOTAS PARA DESARROLLO](#notas-para-desarrollo)
   * [ARBOL DE CARPETAS](#arbol-de-carpetas)
 ---
@@ -19,7 +20,7 @@
 
 1. Infraestructura :white_check_mark:
 2. HAProxy :white_check_mark:
-3. Kubernetes :x:
+3. Kubernetes :white_check_mark: (FALTA DEPLOY EN AKS/AZURE)
 
 ---
 
@@ -104,12 +105,27 @@ Primero clona el repo y posicionate en la raiz.
 7. Ejecutar `ssh vagrant@192.168.100.3 "docker stop users-service-1"`
 8. Verificar nuevamente en el dashboard, y volver a correr desde el punto 2 hacia el servicio del cual se tumbo un contenedor
 
-### <a id="43-probar-kubernetes"></a>4.3. Probar Kubernetes
+### <a id="43-probar-microservicios"></a>4.3. Probar Microservicios
 
-1. No hay nada aun.
-2. Pero podemos probar los microservicios mientras tanto
-3. Para probarlos desde terminal con curl este es un ejemplo: `curl -i -X POST http://192.168.56.3:3001/api/users   -H "Content-Type: application/json"   -d '{"name":"Jaime","email":"jaime@gmail.com","username":"jaime","password":"123"}'`
-4. Mejor aun, probarlo desde el <a href="http://192.168.100.2">frontend</a> con esas credenciales que acabamos de crear
+1. Para probarlos desde terminal con curl este es un ejemplo: `curl -i -X POST http://192.168.56.3:3001/api/users   -H "Content-Type: application/json"   -d '{"name":"Jaime","email":"jaime@gmail.com","username":"jaime","password":"123"}'`
+2. Mejor aun, probarlo desde el <a href="http://192.168.100.2">frontend</a> con esas credenciales que acabamos de crear
+
+### <a id="44-probar-kubernetes"></a>4.4. Probar Kubernetes
+
+1. Ingresar al control-node `vagrant ssh control-node`
+2. `kubectl get all -n microapp` para verificar que todos los pods esten corriendo(se)
+3. Ejecutar `minikube ip`
+
+#### FLUJO DE CURL
+
+4. Creamos una cookie de inicio de sesion `curl -i -X POST http://$(minikube ip)/api/login -H "Content-Type: application/json" -d '{"username":"juan", "password":"123"}' -c cookies.txt`
+5. Reintentar enviando el archivo cookies `curl -i -X GET http://$(minikube ip)/api/orders -b cookies.txt`
+6. Crear nuevo producto con la cookie `curl -i -X POST http://$(minikube ip)/api/products   -H "Content-Type: application/json"   -b cookies.txt   -d '{"name": "arroz", "price":50,"quantity": 100}'`
+
+#### SEGUIR EL FLUJO
+
+7. `kubectl scale deployment/orders-deployment -n microapp --replicas=4` Para escalar horizontalmente a orders
+8. `kubectl get pods -n microapp -l app=orders-service -w` Visualizar los nuevos pods
 
 ---
 
@@ -169,6 +185,7 @@ Microproyecto2
 │   │   │   └── notas.txt
 │   │   └── solo.rb
 │   └── terraform
+│       ├── cookies.txt
 │       ├── main.tf
 │       ├── outputs.tf
 │       ├── providers.tf
@@ -176,6 +193,9 @@ Microproyecto2
 │       ├── terraform.tfstate.backup
 │       └── variables.tf
 ├── 3. Kubernetes
+│   ├── 00-namespace.yaml
+│   ├── 01-microservices.yaml
+│   └── 02-ingress.yaml
 ├── Diagrama.png
 ├── README.md
 └── Vagrantfile

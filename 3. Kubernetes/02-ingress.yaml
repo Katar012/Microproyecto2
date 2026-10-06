@@ -10,7 +10,21 @@ spec:
   ingressClassName: nginx
   rules:
   - http:
-      paths:
+     paths:
+      - path: /api/login
+        pathType: Prefix
+        backend:
+          service:
+            name: users-svc
+            port:
+              number: 5002
+      - path: /api/logout
+        pathType: Prefix
+        backend:
+          service:
+            name: users-svc
+            port:
+              number: 5002
       - path: /api/users
         pathType: Prefix
         backend:
