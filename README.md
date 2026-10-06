@@ -87,6 +87,7 @@ Primero clona el repo y posicionate en la raiz.
 1. `vagrant up` levantamos maquinas
 2. `vagrant ssh control-node` entramos a control-node
 3. `cd /vagrant/1-2.\ Infraestructura/terraform` para ir a la carpeta compartida, raiz del repo
+4. `terraform show` muestra outputs indicando que las maquinas esclavas estan vivas
 4. `ssh vagrant@192.168.100.3 "docker ps"` verificamos que vm-microservices tenga contenedores
 5. `ssh vagrant@192.168.100.2 "sudo systemctl status haproxy"` verificamos que vm-haproxy tenga haproxy
 6. `terraform destroy` destruye las instancias aprovisionadas
