@@ -57,7 +57,7 @@ Vagrant.configure("2") do |config|
     SHELL
   end
 
-# 3. control-node (Se ejecuta al final para orquestar a las otras dos VMs)
+# 3. control-node
   config.vm.define "control-node" do |control|
     control.vm.box = "bento/ubuntu-22.04"
     control.vm.network "private_network", ip: "192.168.100.10"
@@ -71,39 +71,40 @@ Vagrant.configure("2") do |config|
     control.vm.synced_folder ".", "/vagrant"
 
     control.vm.provision "shell", inline: <<-SHELL
-      sudo apt-get update -y
-      sudo apt-get install -y wget curl unzip git software-properties-common sshpass
+      # Instalar dependencias solo si no existe terraform
+      if ! command -v terraform &> /dev/null; then
+        sudo apt-get update -y
+        sudo apt-get install -y wget curl unzip git software-properties-common sshpass
 
-      # Instala Terraform
-      wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
-      echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-      sudo apt-get update -y && sudo apt-get install -y terraform
-
-      # Instala Chef Workstation / Cinc Workstation
-      curl -L https://omnitruck.chef.io/install.sh | sudo bash -s -- -P chef-workstation
-
-      # Genera clave SSH para el usuario vagrant si no existe
-      if [ ! -f /home/vagrant/.ssh/id_rsa ]; then
-        sudo -u vagrant ssh-keygen -t rsa -N "" -f /home/vagrant/.ssh/id_rsa
+        wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
+        echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+        sudo apt-get update -y && sudo apt-get install -y terraform
       fi
 
-      # Copia las llaves a las VMs usando la llave del usuario vagrant
-      sshpass -p "vagrant" ssh-copy-id -i /home/vagrant/.ssh/id_rsa.pub -o StrictHostKeyChecking=no vagrant@192.168.100.2 || true
-      sshpass -p "vagrant" ssh-copy-id -i /home/vagrant/.ssh/id_rsa.pub -o StrictHostKeyChecking=no vagrant@192.168.100.3 || true
+      # Instalar Chef Workstation solo si no está instalado
+      if ! command -v chef &> /dev/null; then
+        curl -L https://omnitruck.chef.io/install.sh | sudo bash -s -- -P chef-workstation
+      fi
+
+      # Generar y copiar clave SSH solo si no existe
+      if [ ! -f /home/vagrant/.ssh/id_rsa ]; then
+        sudo -u vagrant ssh-keygen -t rsa -N "" -f /home/vagrant/.ssh/id_rsa
+        sshpass -p "vagrant" ssh-copy-id -i /home/vagrant/.ssh/id_rsa.pub -o StrictHostKeyChecking=no vagrant@192.168.100.2 || true
+        sshpass -p "vagrant" ssh-copy-id -i /home/vagrant/.ssh/id_rsa.pub -o StrictHostKeyChecking=no vagrant@192.168.100.3 || true
+      fi
 
       TERRAFORM_DIR="/vagrant/1-2. Infraestructura/terraform"
 
       if [ -d "$TERRAFORM_DIR" ]; then
-        echo "=== INICIANDO APROVISIONAMIENTO DE TERRAFORM ==="
+        echo "=== EJECUTANDO TERRAFORM ==="
         cd "$TERRAFORM_DIR"
 
-        # Borra estados antiguos para forzar a Terraform a ejecutar Chef en instalaciones limpias
-        rm -rf .terraform .terraform.lock.hcl terraform.tfstate terraform.tfstate.backup
-
-        sudo -u vagrant terraform init
+        # MANTENER EL ESTADO DE TERRAFORM (NO BORRAR TERRAFORM.TFSTATE)
+        if [ ! -d ".terraform" ]; then
+          sudo -u vagrant terraform init
+        fi
+        
         sudo -u vagrant terraform apply -auto-approve
-      else
-        echo "ERROR: No se encontró la carpeta $TERRAFORM_DIR"
       fi
     SHELL
   end

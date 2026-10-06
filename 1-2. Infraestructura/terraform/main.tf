@@ -1,5 +1,9 @@
-# Aprovisiona vm-microservices transfiriendo los cookbooks de Chef y ejecutándolos
+# Aprovisiona vm-microservices transfiriendo los cookbooks de Chef
 resource "null_resource" "provision_microservices" {
+  triggers = {
+    chef_dir_hash = sha256(join("", [for f in fileset("${path.module}/../chef", "**") : filesha256("${path.module}/../chef/${f}")]))
+  }
+
   connection {
     type     = "ssh"
     host     = var.microservices_ip
@@ -7,26 +11,36 @@ resource "null_resource" "provision_microservices" {
     password = var.ssh_password
   }
 
-  # Copia la carpeta de Chef completa al nodo destino
+  # Clean up old chef temp files BEFORE transferring new ones
+  provisioner "remote-exec" {
+    inline = [
+      "sudo rm -rf /tmp/chef"
+    ]
+  }
+
+  # Copy fresh chef directory
   provisioner "file" {
     source      = "${path.module}/../chef"
     destination = "/tmp/chef"
   }
 
-  # Instala Cinc/Chef Client en el nodo y ejecuta el rol de microservicios
+  # Execute Chef
   provisioner "remote-exec" {
     inline = [
       "while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 2; done",
-      "curl -L https://omnitruck.cinc.sh/install.sh | sudo bash -s -- -v 18",
+      "command -v cinc-client >/dev/null 2>&1 || curl -L https://omnitruck.cinc.sh/install.sh | sudo bash -s -- -v 18",
       "cd /tmp/chef && sudo cinc-client -z -c /tmp/chef/solo.rb -j /tmp/chef/nodes/vm-microservices.json"
     ]
   }
 }
 
-# Aprovisiona vm-haproxy transfiriendo los cookbooks de Chef y ejecutándolos
+# Aprovisiona vm-haproxy
 resource "null_resource" "provision_haproxy" {
-  # Garantiza que los microservicios se instalen primero antes de aprovisionar el balanceador
   depends_on = [null_resource.provision_microservices]
+
+  triggers = {
+    chef_dir_hash = sha256(join("", [for f in fileset("${path.module}/../chef", "**") : filesha256("${path.module}/../chef/${f}")]))
+  }
 
   connection {
     type     = "ssh"
@@ -43,9 +57,7 @@ resource "null_resource" "provision_haproxy" {
   provisioner "remote-exec" {
     inline = [
       "while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 2; done",
-      "sudo systemctl stop unattended-upgrades || true",
-      "sudo apt-get update -y",
-      "curl -L https://omnitruck.cinc.sh/install.sh | sudo bash -s -- -v 18",
+      "command -v cinc-client >/dev/null 2>&1 || curl -L https://omnitruck.cinc.sh/install.sh | sudo bash -s -- -v 18",
       "cd /tmp/chef && sudo cinc-client -z -c /tmp/chef/solo.rb -j /tmp/chef/nodes/vm-haproxy.json"
     ]
   }

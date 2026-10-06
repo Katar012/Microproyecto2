@@ -1,0 +1,6 @@
+name 'mysql'
+maintainer 'Katar012 - jvilamarin31 - AlejandroRodriguezDev'
+license 'RE MARICON EL QUE LO LEA'
+description 'Instala y habilita el servicio de mysql'
+version '0.1.0'
+chef_version '>= 16.0'
