@@ -1,0 +1,151 @@
+---
+# -------------------------------------------------------
+# USERS SERVICE
+# -------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-deployment
+  namespace: microapp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: users-service
+  template:
+    metadata:
+      labels:
+        app: users-service
+    spec:
+      containers:
+      - name: users-service
+        image: jcueror/microservices:users
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5002
+        env:
+        - name: MYSQL_HOST
+          value: "192.168.100.3"  # Replace with your MySQL server IP or Service name
+        - name: MYSQL_USER
+          value: "app"
+        - name: MYSQL_PASSWORD
+          value: "app_password"
+        - name: MYSQL_DB
+          value: "users_db"
+        - name: SECRET_KEY
+          value: "secret123"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: users-svc
+  namespace: microapp
+spec:
+  type: ClusterIP
+  selector:
+    app: users-service
+  ports:
+  - port: 5002
+    targetPort: 5002
+
+---
+# -------------------------------------------------------
+# PRODUCTS SERVICE
+# -------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: products-deployment
+  namespace: microapp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: products-service
+  template:
+    metadata:
+      labels:
+        app: products-service
+    spec:
+      containers:
+      - name: products-service
+        image: jcueror/microservices:products
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5003
+        env:
+        - name: MYSQL_HOST
+          value: "192.168.100.3"  # Replace with your MySQL server IP or Service name
+        - name: MYSQL_USER
+          value: "app"
+        - name: MYSQL_PASSWORD
+          value: "app_password"
+        - name: MYSQL_DB
+          value: "products_db"
+        - name: SECRET_KEY
+          value: "secret123"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: products-svc
+  namespace: microapp
+spec:
+  type: ClusterIP
+  selector:
+    app: products-service
+  ports:
+  - port: 5003
+    targetPort: 5003
+
+---
+# -------------------------------------------------------
+# ORDERS SERVICE
+# -------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-deployment
+  namespace: microapp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: orders-service
+  template:
+    metadata:
+      labels:
+        app: orders-service
+    spec:
+      containers:
+      - name: orders-service
+        image: jcueror/microservices:orders
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5004
+        env:
+        - name: MYSQL_HOST
+          value: "192.168.100.3"  # Replace with your MySQL server IP or Service name
+        - name: MYSQL_USER
+          value: "app"
+        - name: MYSQL_PASSWORD
+          value: "app_password"
+        - name: MYSQL_DB
+          value: "orders_db"
+        - name: PRODUCTS_SERVICE_URL
+          value: "http://products-svc.microapp.svc.cluster.local:5003"
+        - name: SECRET_KEY
+          value: "secret123"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders-svc
+  namespace: microapp
+spec:
+  type: ClusterIP
+  selector:
+    app: orders-service
+  ports:
+  - port: 5004
+    targetPort: 5004

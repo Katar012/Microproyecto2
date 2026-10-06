@@ -1,0 +1,34 @@
+# /vagrant/3. Kubernetes/02-ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: microapp-ingress
+  namespace: microapp
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - path: /api/users
+        pathType: Prefix
+        backend:
+          service:
+            name: users-svc
+            port:
+              number: 5002
+      - path: /api/products
+        pathType: Prefix
+        backend:
+          service:
+            name: products-svc
+            port:
+              number: 5003
+      - path: /api/orders
+        pathType: Prefix
+        backend:
+          service:
+            name: orders-svc
+            port:
+              number: 5004
