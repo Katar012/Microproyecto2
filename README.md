@@ -108,7 +108,7 @@ Primero clona el repo y posicionate en la raiz.
 1. No hay nada aun.
 2. Pero podemos probar los microservicios mientras tanto
 3. Para probarlos desde terminal con curl este es un ejemplo: `curl -i -X POST http://192.168.56.3:3001/api/users   -H "Content-Type: application/json"   -d '{"name":"Jaime","email":"jaime@gmail.com","username":"jaime","password":"123"}'`
-4. Mejor aun, probarlo desde el <a href="http://192.168.100.2">frontend</a>
+4. Mejor aun, probarlo desde el <a href="http://192.168.100.2">frontend</a> con esas credenciales que acabamos de crear
 
 ---
 
